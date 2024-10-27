@@ -28,7 +28,7 @@ class HomeManager extends StatelessWidget {
             ),
             const SizedBox(height: 22),
             const MenuHeader(),
-            const MenuManager(),
+            MenuManager(),
             const SizedBox(height: 22),
             const LihatEmploy(),
             const SizedBox(height: 22),

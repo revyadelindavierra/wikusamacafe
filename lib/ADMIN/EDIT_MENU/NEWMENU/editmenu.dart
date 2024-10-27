@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -41,7 +40,6 @@ class _UpdateMenuPageState extends State<UpdateMenuPage> {
 
   Future<String?> _uploadImage() async {
     if (_imageFile == null) return null;
-
     String fileName =
         'menu_images/${DateTime.now().millisecondsSinceEpoch}_${_imageFile!.path.split('/').last}';
     try {
@@ -58,24 +56,16 @@ class _UpdateMenuPageState extends State<UpdateMenuPage> {
   Future<void> _updateMenu() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-
       String? imageUrl = await _uploadImage();
       Map<String, dynamic> updatedData = {
-        'name': _name ?? _cloudImageUrl, // Gunakan nilai lama jika tidak diubah
-        'price': _price ?? _price, // Gunakan nilai lama jika tidak diubah
+        'name': _name ?? _cloudImageUrl,
+        'price': _price ?? _price,
         'cloudImageUrl': imageUrl ?? _cloudImageUrl,
       };
-
       await FirebaseFirestore.instance
           .collection('Menu')
           .doc(widget.menuId)
           .update(updatedData);
-
-      _formKey.currentState!.reset();
-      setState(() {
-        _imageFile = null;
-        _cloudImageUrl = null;
-      });
 
       print('Menu updated successfully!');
       Navigator.pop(context);
@@ -83,20 +73,18 @@ class _UpdateMenuPageState extends State<UpdateMenuPage> {
   }
 
   Future<void> _deleteMenu() async {
-    // Delete the menu item from Firestore
     await FirebaseFirestore.instance
         .collection('Menu')
         .doc(widget.menuId)
         .delete();
     print('Menu deleted successfully!');
-    Navigator.pop(context); // Go back after deletion
+    Navigator.pop(context);
   }
 
   Future<void> _pickImage() async {
     final ImagePicker _picker = ImagePicker();
     final XFile? pickedFile =
         await _picker.pickImage(source: ImageSource.gallery);
-
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -107,70 +95,151 @@ class _UpdateMenuPageState extends State<UpdateMenuPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Update Menu')),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF016042),
+        title: const Text(
+          'Update Menu',
+          style: TextStyle(color: Colors.white),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                initialValue: _name,
-                decoration: InputDecoration(labelText: 'Menu Name'),
-                onSaved: (value) {
-                  _name = value!.isEmpty
-                      ? _name
-                      : value; // Gunakan nilai lama jika dibiarkan kosong
-                },
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please enter menu name';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                initialValue: _price?.toString(),
-                decoration: InputDecoration(labelText: 'Price'),
-                keyboardType: TextInputType.number,
-                onSaved: (value) {
-                  _price = value!.isEmpty
-                      ? _price
-                      : double.tryParse(
-                          value); // Gunakan nilai lama jika dibiarkan kosong
-                },
-                validator: (value) {
-                  if (value!.isNotEmpty && double.tryParse(value) == null) {
-                    return 'Please enter a valid price';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              _imageFile == null && _cloudImageUrl != null
-                  ? Image.network(_cloudImageUrl!, height: 100)
-                  : _imageFile == null
-                      ? Text('No image selected.')
-                      : Image.file(_imageFile!, height: 100),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _pickImage,
-                child: Text('Pick Image from Gallery'),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _updateMenu,
-                child: Text('Update Menu'),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _deleteMenu,
-                child: Text('Delete Menu', style: TextStyle(color: Colors.red)),
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    height: 180,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      border: Border.all(color: const Color(0xFF016042)),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: _imageFile == null && _cloudImageUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8.0),
+                            child: Image.network(
+                              _cloudImageUrl!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : _imageFile == null
+                            ? const Center(
+                                child: Icon(
+                                  Icons.image,
+                                  size: 50,
+                                  color: Color(0xFF016042),
+                                ),
+                              )
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(8.0),
+                                child: Image.file(
+                                  _imageFile!,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Menu Name',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                _buildTextField(
+                  initialValue: _name,
+                  hintText: 'Enter Menu Name',
+                  onSave: (value) {
+                    _name = value!.isEmpty ? _name : value;
+                  },
+                  validator: (value) =>
+                      value!.isEmpty ? 'Please enter menu name' : null,
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Price',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                _buildTextField(
+                  initialValue: _price?.toString(),
+                  hintText: 'Enter Price',
+                  keyboardType: TextInputType.number,
+                  onSave: (value) {
+                    _price = value!.isEmpty ? _price : double.tryParse(value);
+                  },
+                  validator: (value) =>
+                      value!.isNotEmpty && double.tryParse(value) == null
+                          ? 'Please enter a valid price'
+                          : null,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _updateMenu,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF016042),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: const Text(
+                    'Update Menu',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _deleteMenu,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.withOpacity(0.5), // Softer red
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: const Text(
+                    'Delete Menu',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required String? initialValue,
+    required String hintText,
+    required FormFieldSetter<String> onSave,
+    required FormFieldValidator<String> validator,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      initialValue: initialValue,
+      decoration: InputDecoration(
+        hintText: hintText,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color(0xFF016042)),
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+      ),
+      onSaved: onSave,
+      validator: validator,
+      keyboardType: keyboardType,
     );
   }
 }

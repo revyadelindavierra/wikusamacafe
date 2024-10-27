@@ -12,33 +12,41 @@ class _DrinkMenuPageState extends State<DrinkMenuPage> {
   List<Map<String, dynamic>> _selectedItems = [];
   int selectedCount = 0;
 
+  // To store the used table numbers
+  List<int> usedTableNumbers = [];
+
   void _toggleItemSelection(int index) {
     setState(() {
-      menuItems[index]['selected'] = !menuItems[index]['selected'];
-      if (menuItems[index]['selected']) {
-        _selectedItems.add(menuItems[index]);
-        selectedCount++;
-      } else {
-        _selectedItems.remove(menuItems[index]);
-        selectedCount--;
-      }
+      Map<String, dynamic> selectedItem = {
+        'id': menuItems[index]['id'],
+        'name': menuItems[index]['name'],
+        'price': menuItems[index]['price'],
+        'image_url': menuItems[index]['cloudImageUrl'],
+        'quantity': 1,
+      };
+      _selectedItems.add(selectedItem);
+      selectedCount++;
     });
   }
 
-  void _fetchMenuItems() {
-    FirebaseFirestore.instance.collection('Drink').get().then((querySnapshot) {
+  Future<void> _fetchMenuItems() async {
+    try {
+      QuerySnapshot querySnapshot =
+          await FirebaseFirestore.instance.collection('Drink').get();
       setState(() {
         menuItems = querySnapshot.docs.map((doc) {
           return {
             'id': doc.id,
-            'name': doc['name'],
-            'image_path': doc['image_path'],
-            'price': doc['price'],
-            'selected': false,
+            'name': doc['name'] ?? 'Unknown',
+            'cloudImageUrl':
+                doc['cloudImageUrl'], // Ensure this field is correctly named
+            'price': doc['price'] ?? 0,
           };
         }).toList();
       });
-    });
+    } catch (error) {
+      print('Error fetching menu items: $error');
+    }
   }
 
   @override
@@ -59,31 +67,23 @@ class _DrinkMenuPageState extends State<DrinkMenuPage> {
                     itemCount: menuItems.length,
                     itemBuilder: (context, index) {
                       final item = menuItems[index];
-                      return ListTile(
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(5),
-                          child: SizedBox(
-                            width: 120,
-                            height: 500,
-                            child: Image.asset(item['image_path'],
-                                fit: BoxFit.cover),
+                      return Column(
+                        children: [
+                          ListTile(
+                            leading:
+                                _buildImageOrPlaceholder(item['cloudImageUrl']),
+                            title: Text(
+                              item['name'] ?? 'Unknown',
+                              style: TextStyle(fontSize: 18),
+                            ),
+                            subtitle: Text(
+                              'Rp ${item['price']}', // Use the fetched price
+                              style: TextStyle(fontSize: 15),
+                            ),
+                            onTap: () => _toggleItemSelection(index),
                           ),
-                        ),
-                        title: Text(
-                          item['name'],
-                          style: TextStyle(fontSize: 18),
-                        ),
-                        subtitle: Text(
-                          ' Rp ${item['price']}',
-                          style: TextStyle(fontSize: 15),
-                        ),
-                        // trailing: Icon(
-                        //   item['selected']
-                        //       ? Icons.check_box
-                        //       : Icons.check_box_outline_blank,
-                        //   color: item['selected'] ? Colors.green : null,
-                        // ),
-                        onTap: () => _toggleItemSelection(index),
+                          Divider(),
+                        ],
                       );
                     },
                   ),
@@ -93,10 +93,77 @@ class _DrinkMenuPageState extends State<DrinkMenuPage> {
             child: ButtonnBawah(
               itemCount: selectedCount,
               selectedItems: _selectedItems,
+              usedTableNumbers: usedTableNumbers,
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildImageOrPlaceholder(String? imageUrl) {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      // Show the image if the URL is valid
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 100,
+          height: 100, // Adjust height to match width
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            loadingBuilder: (BuildContext context, Widget child,
+                ImageChunkEvent? loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          (loadingProgress.expectedTotalBytes ?? 1)
+                      : null,
+                ),
+              );
+            },
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stackTrace) {
+              // Display an empty box if there's an error
+              return Container(
+                width: 100,
+                height: 100,
+                color: Colors.grey[200], // Maintain the empty box
+                child: Center(
+                  child: Text(
+                    'Image not available',
+                    style: TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      // Show a placeholder if no image URL is provided
+      return Container(
+        width: 100,
+        height: 100, // Maintain same size for consistency
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.grey[200], // Light grey background
+        ),
+        child: Center(
+          child: Text(
+            'Image not uploaded',
+            style: TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
   }
 }

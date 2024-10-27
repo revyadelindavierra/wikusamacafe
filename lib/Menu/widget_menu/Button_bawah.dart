@@ -3,13 +3,14 @@ import 'package:wikusamacafe/Checkhout/Checkout_Page.dart';
 
 class ButtonnBawah extends StatefulWidget {
   final int itemCount;
-  final List<Map<String, dynamic>>
-      selectedItems; // Added selectedItems parameter
+  final List<Map<String, dynamic>> selectedItems;
+  final List<int> usedTableNumbers; // Added parameter for used table numbers
 
   const ButtonnBawah({
     super.key,
     required this.itemCount,
-    required this.selectedItems, // Required parameter for selectedItems
+    required this.selectedItems,
+    required this.usedTableNumbers, // Include the new parameter
   });
 
   @override
@@ -28,6 +29,8 @@ class _ButtonnBawahState extends State<ButtonnBawah> {
               MaterialPageRoute(
                 builder: (context) => CheckoutPage(
                   selectedItems: widget.selectedItems,
+                  usedTableNumbers:
+                      widget.usedTableNumbers, // Pass the used table numbers
                 ),
               ),
             );

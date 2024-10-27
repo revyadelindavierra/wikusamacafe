@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:wikusamacafe/Checkhout/Payment.dart';
-import 'package:wikusamacafe/Checkhout/Total.dart'; // Ensure this is imported
+import 'package:wikusamacafe/Checkhout/Total.dart';
 
 class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> selectedItems;
+  final List<int> usedTableNumbers; // List of used table numbers
 
-  const CheckoutPage({super.key, required this.selectedItems});
+  const CheckoutPage({
+    super.key,
+    required this.selectedItems,
+    required this.usedTableNumbers,
+  });
 
   @override
   _CheckoutPageState createState() => _CheckoutPageState();
@@ -14,6 +19,7 @@ class CheckoutPage extends StatefulWidget {
 
 class _CheckoutPageState extends State<CheckoutPage> {
   late List<int> itemCounts;
+  String? _selectedTable; // Selected table number
 
   @override
   void initState() {
@@ -32,6 +38,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     final currencyFormat =
         NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+    // List of table numbers 1-8
+    List<String> tableNumbers =
+        List.generate(8, (index) => (index + 1).toString());
 
     return Scaffold(
       appBar: AppBar(
@@ -53,6 +63,41 @@ class _CheckoutPageState extends State<CheckoutPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Divider(color: Colors.grey[300], thickness: 1),
+
+          // Dropdown to select table number
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: DropdownButtonFormField<String>(
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16.0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Color(0xFF016042)),
+                  borderRadius: BorderRadius.circular(16.0),
+                ),
+              ),
+              value: _selectedTable,
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedTable = newValue; // Save the selected value
+                });
+              },
+              items: tableNumbers
+                  .where((number) => !widget.usedTableNumbers
+                      .contains(int.parse(number))) // Filter table numbers
+                  .map((number) {
+                return DropdownMenuItem(
+                  value: number,
+                  child: Text(number),
+                );
+              }).toList(),
+              validator: (value) =>
+                  value == null ? 'Please select a table number' : null,
+            ),
+          ),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -71,7 +116,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ],
             ),
           ),
-          // Wrap the ListView.builder in Expanded to avoid infinite size error
+
+          // List of order items
           Expanded(
             child: ListView.builder(
               itemCount: widget.selectedItems.length,
@@ -87,9 +133,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         child: Container(
                           width: 100,
                           height: 100,
-                          child: Image.asset(
-                            item['image_path'],
+                          child: Image.network(
+                            item['image_url'], // Use 'image_url' for the image
                             fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          (loadingProgress.expectedTotalBytes ??
+                                              1)
+                                      : null,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 100,
+                                height: 100,
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: Text('Image not available',
+                                      style: TextStyle(color: Colors.red)),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -108,6 +178,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           ],
                         ),
                       ),
+                      // Adjusted quantity buttons
                       Row(
                         children: [
                           IconButton(
@@ -117,7 +188,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 if (itemCounts[index] > 1) {
                                   itemCounts[index]--;
                                 } else {
-                                  // Hapus item jika jumlahnya 1
+                                  // Remove item if the count is 1
                                   widget.selectedItems.removeAt(index);
                                   itemCounts.removeAt(index);
                                 }

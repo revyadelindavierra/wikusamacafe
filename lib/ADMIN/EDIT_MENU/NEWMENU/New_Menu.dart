@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wikusamacafe/ADMIN/EDIT_MENU/pilihanmenu_Admin.dart';
 
 class AddNewMenuPage extends StatefulWidget {
   @override
@@ -19,7 +20,6 @@ class _AddNewMenuPageState extends State<AddNewMenuPage> {
 
   final List<String> categories = ['Packet', 'Snack', 'Drink'];
 
-  // Pilih gambar dari perangkat
   Future<void> _pickImage() async {
     final ImagePicker _picker = ImagePicker();
     final XFile? pickedFile =
@@ -32,7 +32,6 @@ class _AddNewMenuPageState extends State<AddNewMenuPage> {
     }
   }
 
-  // Upload gambar ke Firebase Storage
   Future<String?> _uploadImage() async {
     if (_imageFile == null) return null;
 
@@ -41,44 +40,53 @@ class _AddNewMenuPageState extends State<AddNewMenuPage> {
     try {
       final ref = FirebaseStorage.instance.ref().child(fileName);
       await ref.putFile(_imageFile!);
-      String downloadUrl = await ref.getDownloadURL();
-      return downloadUrl; // Kembalikan URL gambar yang diupload
+      return await ref.getDownloadURL();
     } catch (e) {
       print('Error uploading image: $e');
-      return null; // Kembalikan null jika terjadi kesalahan
+      return null;
     }
   }
 
-  // Simpan menu ke Firestore
   Future<void> _saveMenu() async {
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save(); // Simpan data form
-
-      String? imageUrl = await _uploadImage(); // Upload gambar dan dapatkan URL
+      _formKey.currentState!.save();
+      String? imageUrl = await _uploadImage();
 
       if (imageUrl != null) {
         try {
-          // Simpan URL gambar ke Firestore dengan field cloudImageUrl
-          await FirebaseFirestore.instance.collection('Menu').add({
+          String collection;
+          if (_selectedCategory == 'Packet') {
+            collection = 'Menu';
+          } else if (_selectedCategory == 'Snack') {
+            collection = 'Snack';
+          } else if (_selectedCategory == 'Drink') {
+            collection = 'Drink';
+          } else {
+            throw Exception('Kategori tidak valid');
+          }
+
+          await FirebaseFirestore.instance.collection(collection).add({
             'name': _name,
             'price': _price,
-            'cloudImageUrl': imageUrl, // Menggunakan cloudImageUrl
-            'category': _selectedCategory // Menyimpan kategori jika diperlukan
+            'cloudImageUrl': imageUrl,
+            'category': _selectedCategory,
           });
 
-          // Reset form setelah berhasil menyimpan
           _formKey.currentState!.reset();
           setState(() {
-            _imageFile = null; // Reset image file
-            _cloudImageUrl = null; // Reset image URL
+            _imageFile = null;
+            _cloudImageUrl = null;
           });
 
-          print('Menu saved successfully!');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MenuAdmin()),
+          );
         } catch (e) {
-          print('Error saving menu to Firestore: $e');
+          print('Error saat menyimpan menu: $e');
         }
       } else {
-        print('Image upload failed, cannot save menu.');
+        print('Gagal mengunggah gambar, tidak dapat menyimpan menu.');
       }
     }
   }
@@ -86,73 +94,168 @@ class _AddNewMenuPageState extends State<AddNewMenuPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add New Menu')),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF016042),
+        title: const Text(
+          'New Menu',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Menu Name'),
-                onSaved: (value) {
-                  _name = value;
-                },
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please enter menu name';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                decoration: InputDecoration(labelText: 'Price'),
-                keyboardType: TextInputType.number,
-                onSaved: (value) {
-                  _price = double.tryParse(value!);
-                },
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please enter price';
-                  }
-                  return null;
-                },
-              ),
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(labelText: 'Category'),
-                value: _selectedCategory,
-                onChanged: (newValue) {
-                  setState(() {
-                    _selectedCategory = newValue;
-                  });
-                },
-                items: categories.map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Text(category),
-                  );
-                }).toList(),
-                validator: (value) =>
-                    value == null ? 'Please select a category' : null,
-              ),
-              SizedBox(height: 16),
-              _imageFile == null
-                  ? Text('No image selected.')
-                  : Image.file(_imageFile!, height: 100),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _pickImage,
-                child: Text('Pick Image from Gallery'),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _saveMenu,
-                child: Text('Save Menu'),
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Image',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    height: 180,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF016042).withOpacity(0.1),
+                      border: Border.all(color: const Color(0xFF016042)),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: _imageFile != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8.0),
+                            child: Image.file(
+                              _imageFile!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : const Center(
+                            child: Icon(
+                              Icons.image,
+                              size: 50,
+                              color: Color(0xFF016042),
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildLabel('Name'),
+                _buildTextField(
+                  hintText: 'Enter Your New Menu Name',
+                  onSave: (value) => _name = value,
+                  validator: (value) =>
+                      value!.isEmpty ? 'Please enter menu name' : null,
+                ),
+                const SizedBox(height: 24),
+                _buildLabel('Description'),
+                _buildTextField(
+                  hintText: 'Enter Description Menu',
+                  onSave: (value) => {}, // Handle if necessary
+                  validator: (value) =>
+                      value!.isEmpty ? 'Please enter a description' : null,
+                ),
+                const SizedBox(height: 24),
+                _buildLabel('Category'),
+                _buildDropdownField(),
+                const SizedBox(height: 24),
+                _buildLabel('Price'),
+                _buildTextField(
+                  hintText: 'Enter the Price',
+                  keyboardType: TextInputType.number,
+                  onSave: (value) => _price = double.tryParse(value!),
+                  validator: (value) =>
+                      value!.isEmpty ? 'Please enter price' : null,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _saveMenu,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF016042),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: const Text(
+                    'Create Menu',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required String hintText,
+    required FormFieldSetter<String> onSave,
+    required FormFieldValidator<String> validator,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      decoration: InputDecoration(
+        hintText: hintText,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color(0xFF016042)),
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+      ),
+      onSaved: onSave,
+      validator: validator,
+      keyboardType: keyboardType,
+    );
+  }
+
+  Widget _buildDropdownField() {
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color(0xFF016042)),
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+      ),
+      value: _selectedCategory,
+      onChanged: (newValue) {
+        setState(() {
+          _selectedCategory = newValue;
+        });
+      },
+      items: categories.map((category) {
+        return DropdownMenuItem(
+          value: category,
+          child: Text(category),
+        );
+      }).toList(),
+      validator: (value) => value == null ? 'Please select a category' : null,
     );
   }
 }

@@ -19,8 +19,7 @@ class _SnackMenuPageAdminState extends State<SnackMenuPageAdmin> {
         'id': menuItems[index]['id'],
         'name': menuItems[index]['name'],
         'price': menuItems[index]['price'],
-        'image_url': menuItems[index]
-            ['cloudImageUrl'], // Ganti dengan URL gambar
+        'image_url': menuItems[index]['cloudImageUrl'],
         'quantity': 1,
       };
       _selectedItems.add(selectedItem);
@@ -79,14 +78,13 @@ class _SnackMenuPageAdminState extends State<SnackMenuPageAdmin> {
                               style: TextStyle(fontSize: 15),
                             ),
                             onTap: () {
-                              // Navigate to the Update Menu Item screen
-                              // Navigator.push(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder: (context) =>
-                              //         UpdateMenuPage(menuItem: item),
-                              //   ),
-                              // );
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      UpdateMenuPage( menuId: '',),
+                                ),
+                              );
                             },
                           ),
                           Divider(),
