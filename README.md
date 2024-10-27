@@ -1,16 +1,17 @@
 # wikusamacafe
 
-A new Flutter project.
+A Flutter-based mobile application designed to display a menu of food items from Firestore, with features for selecting items, managing selected items, and displaying total items selected.
 
-## Getting Started
+## Features
+- **Real-time Data**: Retrieves and updates menu items from Firestore.
+- **Item Selection**: Allows users to add items to their order with real-time tracking.
+- **User-friendly UI**: Optimized for speed and smooth loading.
+- **Customizable Code**: Modular functions for handling data and UI.
 
-This project is a starting point for a Flutter application.
+### Design
 
-A few resources to get you started if this is your first Flutter project:
+Explore the design and prototype on Figma:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- [Figma Design for Cafeee App](https://www.figma.com/design/vPdSIpNzKvEwVyYRxGLpAl/Cafeee?node-id=95-1406&t=h3t9V67wsZj2Bv36-1)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+
