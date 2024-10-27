@@ -1,0 +1,29 @@
+  {
+  "project_info": {
+    "project_number": "445526564665",
+    "project_id": "wikusama-cafe-6de2f",
+    "storage_bucket": "wikusama-cafe-6de2f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:445526564665:android:2aa8de5a8f49841cf612e8",
+        "android_client_info": {
+          "package_name": "com.example.wikusamacafe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMSMLHPpLzOrINVu_WxRTxtBMuqvE_0XQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
